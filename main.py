@@ -137,6 +137,24 @@ class SteamPricePlugin(Star):
             logger.error(f"获取ITAD价格失败: {e}\n{traceback.format_exc()}")
             cn_price = cn_lowest = cn_currency = None
 
+        # 如果ITAD没有国区价格，则用Steam官方API补充当前国区价格
+        if cn_price is None:
+            try:
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.get(
+                        "https://store.steampowered.com/api/appdetails",
+                        params={"appids": appid, "cc": "cn", "l": "zh"}
+                    )
+                    data = resp.json()
+                    app_data = data.get(appid, {})
+                    if app_data.get("success") and app_data.get("data"):
+                        price_overview = app_data["data"].get("price_overview")
+                        if price_overview and "final" in price_overview and "currency" in price_overview:
+                            cn_price = price_overview["final"] / 100
+                            cn_currency = price_overview["currency"]
+            except Exception as e:
+                logger.error(f"补充获取Steam国区实时价格失败: {e}\n{traceback.format_exc()}")
+
         # 获取乌克兰区实时价格（Steam官方API）
         ua_price = ua_currency = None
         try:
