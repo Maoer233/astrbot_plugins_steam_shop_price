@@ -19,7 +19,100 @@ class SteamPricePlugin(Star):
 
     @filter.command("价格")
     async def price(self, event: AstrMessageEvent, url: str):
-        '''查询Steam游戏价格及史低信息，格式：/价格 <steam商店链接>'''
+        '''查询Steam游戏价格及史低信息，格式：/价格 <steam商店链接/游戏名>'''
+        # 新增：自动识别链接或游戏名
+        if not url.lower().startswith("http"):
+            # 1. 不是链接，认为是游戏名，先用LLM翻译为英文
+            yield event.plain_result("正在为主人查找游戏，请稍等...")
+            try:
+                # 调用 LLM 翻译（参考 SDGen_Maoer 用法）
+                prompt = f"请将以下游戏名翻译为steam页面的英文官方名称，仅输出英文名，不要输出其他内容：{url}"
+                logger.info(f"[LLM][翻译游戏名] 输入prompt: {prompt}")
+                llm_response = await self.context.get_using_provider().text_chat(
+                    prompt=prompt,
+                    contexts=[],
+                    image_urls=[],
+                    func_tool=None,
+                    system_prompt=""
+                )
+                game_en_name = llm_response.completion_text.strip()
+                logger.info(f"[LLM][翻译游戏名] 输出: {game_en_name}")
+            except Exception as e:
+                logger.error(f"LLM翻译游戏名失败: {e}")
+                yield event.plain_result("游戏名翻译失败，请重试或直接输入Steam商店链接。")
+                return
+
+            # 2. 用ITAD搜索英文名
+            try:
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.get(
+                        f"{ITAD_API_BASE}/games/search/v1",
+                        params={"key": ITAD_API_KEY, "title": game_en_name, "limit": 5}
+                    )
+                    data = resp.json()
+                    logger.info(f"[ITAD][search] 返回: {data}")
+                    # 修正：ITAD返回的是list而不是dict
+                    if not data or not isinstance(data, list):
+                        yield event.plain_result("未找到该游戏，请检查名称或输入Steam商店链接。")
+                        return
+                    # 优先选 type == "game" 且 title 最接近的
+                    def norm(s):
+                        return s.lower().replace(" ", "") if s else ""
+                    norm_en = norm(game_en_name)
+                    candidates = [g for g in data if g.get("type") == "game"]
+                    if not candidates:
+                        candidates = data
+                    # 计算相似度，优先完全匹配，其次包含
+                    best = None
+                    for g in candidates:
+                        title = g.get("title", "")
+                        if norm(title) == norm_en:
+                            best = g
+                            break
+                    if not best:
+                        for g in candidates:
+                            title = g.get("title", "")
+                            if norm_en in norm(title) or norm(title) in norm_en:
+                                best = g
+                                break
+                    if not best and candidates:
+                        best = candidates[0]
+                    if not best:
+                        yield event.plain_result("未找到该游戏的Steam商店链接。")
+                        return
+                    game = best
+                    # 优先找steam商店链接
+                    steam_url = ""
+                    for url_item in game.get("urls", []):
+                        if "store.steampowered.com/app" in url_item:
+                            steam_url = url_item
+                            break
+                    # 如果没有直接的 steam 链接，则用 ITAD 的 gid 查 info 拿 appid 再拼接
+                    if not steam_url and game.get("id"):
+                        try:
+                            async with httpx.AsyncClient(timeout=10) as client2:
+                                resp2 = await client2.get(
+                                    f"{ITAD_API_BASE}/games/info/v2",
+                                    params={"key": ITAD_API_KEY, "id": game["id"]}
+                                )
+                                info2 = resp2.json()
+                                appid = info2.get("appid")
+                                if appid:
+                                    steam_url = f"https://store.steampowered.com/app/{appid}"
+                        except Exception as e:
+                            logger.error(f"通过ITAD gid查appid失败: {e}\n{traceback.format_exc()}")
+                    if not steam_url:
+                        yield event.plain_result("未找到该游戏的Steam商店链接。")
+                        return
+                    # 递归调用自身，走链接流程
+                    async for result in self.price(event, steam_url):
+                        yield result
+                    return
+            except Exception as e:
+                logger.error(f"ITAD搜索失败: {e}\n{traceback.format_exc()}")
+                yield event.plain_result("游戏搜索失败，请重试或直接输入Steam商店链接。")
+                return
+
         # 1. 解析appid
         m = re.match(r"https?://store\.steampowered\.com/app/(\d+)", url)
         if not m:
@@ -104,7 +197,7 @@ class SteamPricePlugin(Star):
         # steam_name, steam_image = ...; gid = ...; ua_price, ua_currency, ua_discount_percent = ...
         # 兼容 yield event.plain_result
         if gid is None:
-            yield event.plain_result("未找到该游戏的 isthereanydeal id。")
+            yield event.plain_result("未找到该游戏的 isthereanydeal id \n（试一下换个名称搜索一下）。")
             return
 
         # ITAD游戏基本信息
@@ -320,7 +413,7 @@ class SteamPricePlugin(Star):
 
     @filter.command("史低")
     async def shidi(self, event: AstrMessageEvent, url: str):
-        '''查询Steam游戏价格及史低信息，格式：/史低 <steam商店链接>'''
+        '''查询Steam游戏价格及史低信息，格式：/史低 <steam商店链接/游戏名>'''
         # 直接复用 price 指令逻辑
         async for result in self.price(event, url):
             yield result
