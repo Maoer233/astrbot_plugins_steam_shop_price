@@ -1,0 +1,7 @@
+name: astrbot_plugins_steam_shop_price
+desc: 用于查询Steam游戏的国区价格、史低信息，并支持与其他区服价格对比。支持识别游戏中文名。
+author: 猫耳
+repo: https://github.com/Maoer233/astrbot_plugins_steam_shop_price
+tags:
+  - steam
+social_link: https://github.com/Maoer233
