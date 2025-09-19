@@ -12,7 +12,7 @@ from .price_convert import to_cny
 ITAD_API_BASE = "https://api.isthereanydeal.com"
 STEAMWEBAPI_PRICES = "https://api.steamwebapi.com/steam/prices"
 
-@register("astrbot_plugins_steam_shop_price", "Maoer", "查询Steam游戏价格及史低", "1.0.0", "https://github.com/xxx/xxx")
+@register("astrbot_plugins_steam_shop_price", "Maoer", "查询Steam游戏价格及史低", "1.0.0", "https://github.com/Maoer233/astrbot_plugins_steam_shop_price")
 class SteamPricePlugin(Star):
     def __init__(self, context: Context, config=None):
         super().__init__(context)
