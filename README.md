@@ -28,6 +28,6 @@
 - 汇率转换由 `price_convert.py` 实现，支持自定义维护
 
 ## 演示截图
-![查询示例](https://raw.githubusercontent.com/Maoer233/astrbot_plugin_steam_status_monitor/main/price.jpg)
+![查询示例](https://raw.githubusercontent.com/Maoer233/astrbot_plugins_steam_shop_price/main/price.jpg)
 
 欢迎加咱QQ 1912584909 来闲聊喵
