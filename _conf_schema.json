@@ -1,0 +1,19 @@
+{
+  "ITAD_API_KEY": {
+    "description": "ITAD API Key",
+    "type": "string",
+    "hint": "可在 https://isthereanydeal.com/apps/ 获取"
+  },
+  "STEAMWEBAPI_KEY": {
+    "description": "Steam Web API Key",
+    "type": "string",
+    "hint": "可在 https://steamcommunity.com/dev/apikey 获取"
+  },
+  "STEAM_COMPARE_REGION": {
+    "description": "Steam价格对比区",
+    "type": "string",
+    "hint": "选择用于价格对比的Steam区，选择'NONE'则不进行对比",
+    "options": ["NONE", "UA", "US", "JP", "KR", "RU", "CN", "TR"],
+    "default": "NONE"
+  }
+}
