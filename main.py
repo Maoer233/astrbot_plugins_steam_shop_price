@@ -12,7 +12,7 @@ from .price_convert import to_cny
 ITAD_API_BASE = "https://api.isthereanydeal.com"
 STEAMWEBAPI_PRICES = "https://api.steamwebapi.com/steam/prices"
 
-@register("astrbot_plugins_steam_shop_price", "Maoer", "查询Steam游戏价格及史低", "1.0.0", "https://github.com/Maoer233/astrbot_plugins_steam_shop_price")
+@register("astrbot_plugins_steam_shop_price", "Maoer", "查询Steam游戏价格及史低", "1.0.1", "https://github.com/Maoer233/astrbot_plugins_steam_shop_price")
 class SteamPricePlugin(Star):
     def __init__(self, context: Context, config=None):
         super().__init__(context)
@@ -22,7 +22,7 @@ class SteamPricePlugin(Star):
         self.compare_region = self.config.get("STEAM_COMPARE_REGION", "UA")
 
     @filter.command("史低")
-    async def shidi(self, event: AstrMessageEvent, url: str, last_gid=None):
+    async def shidi(self, event: AstrMessageEvent):
         '''查询Steam游戏价格及史低信息，格式：/史低 <steam商店链接/游戏名>'''
         # 新增：自动识别链接或游戏名
         # 修复参数丢失问题，直接用 event.message_str 去除指令前缀，保留全部参数内容
