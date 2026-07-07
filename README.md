@@ -30,4 +30,7 @@
 ## 演示截图
 ![查询示例](https://raw.githubusercontent.com/Maoer233/astrbot_plugin_steam_status_monitor/main/price.jpg)
 
+V1.0.2 2026-07-07
+按照当前汇率更新了price_convert.py文件
+
 欢迎加咱QQ 1912584909 来闲聊喵
